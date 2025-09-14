@@ -14,7 +14,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["truck-tracker-api-1.onrender.com", "truck-tracker-client.vercel.app"]
 
 # Application definition
 INSTALLED_APPS = [
@@ -42,6 +42,7 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "https://truck-tracker-client.vercel.app"
 ]
 
 ROOT_URLCONF = "truck_tracker.urls"
