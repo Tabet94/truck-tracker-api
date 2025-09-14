@@ -1,23 +1,30 @@
-
 import openrouteservice
 from django.conf import settings
 import datetime
 
+
+def get_coordinates(location):
+    """Return (lon, lat) tuple for openrouteservice."""
+    if not location or not location.latitude or not location.longitude:
+        raise ValueError(f"Location '{location}' does not have coordinates.")
+    return (location.longitude, location.latitude)  # ORS expects (lon, lat)
+
+
 def generate_route(trip):
     client = openrouteservice.Client(key=settings.ORS_API_KEY)
 
-    # Convert addresses to coordinates
-    current_coords = geocode_address(trip.current_location)
-    pickup_coords = geocode_address(trip.pickup_location)
-    dropoff_coords = geocode_address(trip.dropoff_location)
+    # Use stored coordinates from Location model
+    current_coords = get_coordinates(trip.current_location)
+    pickup_coords = get_coordinates(trip.pickup_location)
+    dropoff_coords = get_coordinates(trip.dropoff_location)
 
     coords = [current_coords, pickup_coords, dropoff_coords]
 
     route = client.directions(
         coordinates=coords,
-        profile='driving-hgv',  # truck profile
-        format='geojson',
-        instructions=True
+        profile="driving-hgv",  # truck profile
+        format="geojson",
+        instructions=True,
     )
 
     geometry = route["features"][0]["geometry"]
@@ -29,24 +36,22 @@ def generate_route(trip):
         "distance_km": summary["distance"] / 1000,
         "duration_hr": summary["duration"] / 3600,
         "instructions": [
-            {"text": step["instruction"], "distance": step["distance"], "duration": step["duration"]}
+            {
+                "text": step["instruction"],
+                "distance": step["distance"],
+                "duration": step["duration"],
+            }
             for step in instructions
-        ]
+        ],
     }
+
+
 def generate_eld_logs(trip):
-    """
-    Generate simple ELD logs for a trip based on driving rules.
-    Assumptions:
-    - Max 11 driving hrs/day
-    - 10 hrs rest/day
-    - 1 hr pickup/drop-off (on first day only)
-    """
+    
     logs = []
-    # Let's assume trip distance implies ~20 total driving hrs (just example).
-    # Later you can calculate from route distance/duration.
-    total_driving_hours = 20  
+    total_driving_hours = 20  # TODO: later base this on route distance
     rest_hours_per_day = 10
-    pickup_dropoff_hours = 1  
+    pickup_dropoff_hours = 1
 
     days_needed = (total_driving_hours + pickup_dropoff_hours) // 11 + 1
     start_date = trip.start_date
